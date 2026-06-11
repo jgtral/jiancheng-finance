@@ -6,12 +6,12 @@ const PRESETS = {
     name: "建成社區 114年預估現狀",
     balances: {
       currentAccount: 441332, // Based on April 115 財報
-      publicReserve: 1262604  // Based on April 114 財報
+      publicReserve: 0  // Based on April 114 財報
     },
     collectionRate: 95,
     adjustmentRate: 0,
     adminCostMultiplier: 1.0,
-    safetyLine: 500000,
+    safetyLine: 0,
     recurringIncome: [
       { id: "inc-1", name: "住戶管理費 (預期應收)", value: 216000, category: "management_fee" },
       { id: "inc-2", name: "車位清潔費與停車租金", value: 30000, category: "parking" },
@@ -33,7 +33,7 @@ const PRESETS = {
       { id: "evt-elevator-tail", name: "龍祥電梯系統更新尾款50%", value: 165000, type: "expense", monthOffset: 6, active: true },
       { id: "evt-sewer-clean", name: "水塔清洗與化糞池清理", value: 25000, type: "expense", monthOffset: 3, active: true },
       { id: "evt-new-1", name: "11F~15F消防灑水測試(機組送電)", value: 80000, type: "expense", monthOffset: 2, active: true },
-      { id: "evt-new-2", name: "B2授信總機迴路未連接查修工程", value: 84500, type: "expense", monthOffset: 3, active: true },
+      { id: "evt-new-2", name: "B2授信總機迴路未連接查修工程", value: 4500, type: "expense", monthOffset: 3, active: true },
       { id: "evt-new-3", name: "B3消防室泡沫機組控制異常檢修", value: 12000, type: "expense", monthOffset: 2, active: true },
       { id: "evt-new-4", name: "B3第69車位廢水池右泵浦逆止閥修復", value: 14000, type: "expense", monthOffset: 3, active: true },
       { id: "evt-new-5", name: "B3龍江3號防火門鏽蝕更新", value: 40000, type: "expense", monthOffset: 4, active: true },
@@ -54,12 +54,12 @@ const PRESETS = {
     name: "危機情境 (收繳率下滑 & 重大超支)",
     balances: {
       currentAccount: 441332,
-      publicReserve: 1262604
+      publicReserve: 0
     },
     collectionRate: 75, // Severe drop in collection
     adjustmentRate: 0,
     adminCostMultiplier: 1.25, // Over-budgeting in administrative staff
-    safetyLine: 800000,
+    safetyLine: 0,
     recurringIncome: [
       { id: "inc-1", name: "住戶管理費 (預期應收)", value: 216000, category: "management_fee" },
       { id: "inc-2", name: "車位清潔費與停車租金", value: 30000, category: "parking" },
@@ -81,7 +81,7 @@ const PRESETS = {
       { id: "evt-elevator-tail", name: "龍祥電梯系統更新尾款50%", value: 165000, type: "expense", monthOffset: 6, active: true },
       { id: "evt-sewer-clean", name: "水塔清洗與化糞池清理", value: 25000, type: "expense", monthOffset: 3, active: true },
       { id: "evt-new-1", name: "11F~15F消防灑水測試(機組送電)", value: 80000, type: "expense", monthOffset: 2, active: true },
-      { id: "evt-new-2", name: "B2授信總機迴路未連接查修工程", value: 84500, type: "expense", monthOffset: 3, active: true },
+      { id: "evt-new-2", name: "B2授信總機迴路未連接查修工程", value: 4500, type: "expense", monthOffset: 3, active: true },
       { id: "evt-new-3", name: "B3消防室泡沫機組控制異常檢修", value: 12000, type: "expense", monthOffset: 2, active: true },
       { id: "evt-new-4", name: "B3第69車位廢水池右泵浦逆止閥修復", value: 14000, type: "expense", monthOffset: 3, active: true },
       { id: "evt-new-5", name: "B3龍江3號防火門鏽蝕更新", value: 40000, type: "expense", monthOffset: 4, active: true },
@@ -102,12 +102,12 @@ const PRESETS = {
     name: "健全情境 (管理費調漲10% & 催收成功)",
     balances: {
       currentAccount: 441332,
-      publicReserve: 1262604
+      publicReserve: 0
     },
     collectionRate: 98, // Great collection
     adjustmentRate: 10, // 10% Increase
     adminCostMultiplier: 1.0,
-    safetyLine: 500000,
+    safetyLine: 0,
     recurringIncome: [
       { id: "inc-1", name: "住戶管理費 (預期應收)", value: 216000, category: "management_fee" },
       { id: "inc-2", name: "車位清潔費與停車租金", value: 30000, category: "parking" },
@@ -129,7 +129,7 @@ const PRESETS = {
       { id: "evt-elevator-tail", name: "龍祥電梯系統更新尾款50%", value: 165000, type: "expense", monthOffset: 6, active: true },
       { id: "evt-sewer-clean", name: "水塔清洗與化糞池清理", value: 25000, type: "expense", monthOffset: 3, active: true },
       { id: "evt-new-1", name: "11F~15F消防灑水測試(機組送電)", value: 80000, type: "expense", monthOffset: 2, active: true },
-      { id: "evt-new-2", name: "B2授信總機迴路未連接查修工程", value: 84500, type: "expense", monthOffset: 3, active: true },
+      { id: "evt-new-2", name: "B2授信總機迴路未連接查修工程", value: 4500, type: "expense", monthOffset: 3, active: true },
       { id: "evt-new-3", name: "B3消防室泡沫機組控制異常檢修", value: 12000, type: "expense", monthOffset: 2, active: true },
       { id: "evt-new-4", name: "B3第69車位廢水池右泵浦逆止閥修復", value: 14000, type: "expense", monthOffset: 3, active: true },
       { id: "evt-new-5", name: "B3龍江3號防火門鏽蝕更新", value: 40000, type: "expense", monthOffset: 4, active: true },
@@ -153,10 +153,10 @@ let state = {
   theme: 'dark',
   balances: {
     currentAccount: 441332,
-    publicReserve: 1262604
+    publicReserve: 0
   },
   monthsToSimulate: 12, // Default to 12 months
-  safetyLine: 500000,
+  safetyLine: 0,
   whatIfParams: [], // Dynamic parameter sliders array
   recurringIncome: [],
   recurringExpenses: [],
@@ -372,6 +372,7 @@ function updateDashboard() {
   
   // Update charts
   renderChart(results);
+  renderSimulationDetailsTable(results);
 }
 
 function renderChart(results) {
@@ -546,7 +547,7 @@ function loadPreset(presetName) {
   
   state.balances = { ...preset.balances };
   state.monthsToSimulate = preset.monthsToSimulate || 12;
-  state.safetyLine = preset.safetyLine || 500000;
+  state.safetyLine = preset.safetyLine ?? 500000;
   
   // Initialize default whatIfParams dynamically from preset
   state.whatIfParams = [
@@ -1032,7 +1033,7 @@ function loadScenario(index) {
   
   state.balances = JSON.parse(JSON.stringify(sc.state.balances));
   state.monthsToSimulate = sc.state.monthsToSimulate || 12;
-  state.safetyLine = sc.state.safetyLine || 500000;
+  state.safetyLine = sc.state.safetyLine ?? 500000;
   
   if (sc.state.whatIfParams) {
     state.whatIfParams = JSON.parse(JSON.stringify(sc.state.whatIfParams));
@@ -1417,3 +1418,123 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initial Lucide compilation
   lucide.createIcons();
 });
+
+// --- Detail Table Rendering ---
+function renderSimulationDetailsTable(results) {
+  const tbody = document.querySelector('#table-simulation-details tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  
+  results.forEach(r => {
+    const m = r.month;
+    const label = r.label;
+    
+    // 1. Recurring Incomes
+    state.recurringIncome.forEach(item => {
+      let multiplier = 1;
+      let finalVal = 0;
+      
+      if (item.category === 'management_fee') {
+        let collectionRate = 95;
+        const collectionParam = state.whatIfParams.find(p => p.target === 'management_fee_collection');
+        if (collectionParam) collectionRate = collectionParam.value;
+        
+        let adjRate = 0;
+        const adjParam = state.whatIfParams.find(p => p.target === 'management_fee_rate');
+        if (adjParam) adjRate = adjParam.value;
+        
+        state.whatIfParams.forEach(p => {
+          if (p.id !== 'param-collection' && p.id !== 'param-fee-adj') {
+            if (p.target === 'management_fee' || p.target === 'all_income') {
+              multiplier *= (p.value / 100);
+            }
+          }
+        });
+        
+        const rawFee = item.value;
+        const adjustedFee = rawFee * (1 + adjRate / 100);
+        finalVal = adjustedFee * (collectionRate / 100) * multiplier;
+      } else {
+        state.whatIfParams.forEach(p => {
+          if (p.target === item.category || p.target === 'all_income') {
+            multiplier *= (p.value / 100);
+          }
+        });
+        finalVal = item.value * multiplier;
+      }
+      
+      if (finalVal > 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${label}</td>
+          <td><span class="text-success">[經常性收入]</span> ${item.name}</td>
+          <td class="text-amount-income">+${formatCurrency(finalVal)}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    });
+    
+    // 2. Special Event Incomes (Major Incomes)
+    const activeIncomeEvents = state.specialEvents.filter(e => e.active && e.type === 'income' && parseInt(e.monthOffset) === m);
+    activeIncomeEvents.forEach(evt => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${label}</td>
+        <td><span class="text-success">[單次重大收入]</span> ${evt.name}</td>
+        <td class="text-amount-income">+${formatCurrency(evt.value)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+    
+    // 3. Recurring Expenses
+    state.recurringExpenses.forEach(item => {
+      if (item.id === 'exp-8' && m > 10) {
+        return; 
+      }
+      
+      let multiplier = 1;
+      state.whatIfParams.forEach(p => {
+        if (p.target === item.category || p.target === 'all_expenses') {
+          multiplier *= (p.value / 100);
+        }
+      });
+      
+      const finalVal = item.value * multiplier;
+      
+      if (finalVal > 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${label}</td>
+          <td><span class="text-danger">[經常性支出]</span> ${item.name}</td>
+          <td class="text-amount-expense">-${formatCurrency(finalVal)}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    });
+    
+    // 4. Special Event Expenses (Major Repairs/Projects)
+    const activeExpenseEvents = state.specialEvents.filter(e => e.active && e.type === 'expense' && parseInt(e.monthOffset) === m);
+    activeExpenseEvents.forEach(evt => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${label}</td>
+        <td><span class="text-danger">[單次重大支出]</span> ${evt.name}</td>
+        <td class="text-amount-expense">-${formatCurrency(evt.value)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+    
+    // 5. Monthly Summary Row
+    const summaryTr = document.createElement('tr');
+    summaryTr.className = 'month-divider-row';
+    const netFlowStr = r.netFlow >= 0 ? `+${formatCurrency(r.netFlow)}` : `-${formatCurrency(Math.abs(r.netFlow))}`;
+    const netFlowClass = r.netFlow >= 0 ? 'text-amount-income' : 'text-amount-expense';
+    summaryTr.innerHTML = `
+      <td>${label} (月結)</td>
+      <td><strong>當月收支相抵：<span class="${netFlowClass}">${netFlowStr}</span></strong> | 期末活存：${formatCurrency(r.endingCash)} | 公積金定存：${formatCurrency(r.endingReserve)}</td>
+      <td><strong>總資產：${formatCurrency(r.totalAssets)}</strong></td>
+    `;
+    tbody.appendChild(summaryTr);
+  });
+}
+

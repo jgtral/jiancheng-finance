@@ -1087,3 +1087,59 @@ select,
 .event-pill-info {
   pointer-events: none; /* Helps with click selection targeting */
 }
+
+/* Detail Table styling */
+.detail-table-container {
+  overflow-x: auto;
+  max-height: 450px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background-color: rgba(15, 23, 42, 0.3);
+}
+
+.detail-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.detail-table th {
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  text-transform: none;
+  letter-spacing: 0.5px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.detail-table td {
+  font-size: 0.825rem;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.detail-table tr:last-child td {
+  border-bottom: none;
+}
+
+.detail-table tr.month-divider-row td {
+  background-color: rgba(139, 92, 246, 0.08);
+  font-weight: 700;
+  color: var(--color-primary);
+  border-bottom: 2px solid rgba(139, 92, 246, 0.2);
+}
+
+.detail-table td.text-amount-income {
+  color: var(--color-secondary);
+  font-weight: 600;
+}
+
+.detail-table td.text-amount-expense {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
