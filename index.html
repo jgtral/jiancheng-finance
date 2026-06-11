@@ -80,60 +80,36 @@
           </div>
         </div>
         
-        <div class="form-group" style="margin-bottom: 0;">
+        <div class="form-group">
           <label for="input-safety-line">安全準備金水位 (紅線水位線)</label>
           <div class="input-wrapper">
             <span class="input-prefix">$</span>
             <input type="number" id="input-safety-line" class="form-control has-prefix" value="500000">
           </div>
         </div>
+        
+        <div class="form-group" style="margin-bottom: 0;">
+          <label for="select-simulate-months">模擬預測期數 (月份長度)</label>
+          <select id="select-simulate-months" class="form-control">
+            <option value="6">6 個月</option>
+            <option value="12" selected>12 個月 (預設)</option>
+            <option value="18">18 個月</option>
+            <option value="24">24 個月</option>
+            <option value="36">36 個月</option>
+            <option value="48">48 個月</option>
+          </select>
+        </div>
       </div>
       
       <!-- What-if Sliders Card -->
       <div class="card">
         <h3 class="card-title">What-If 關鍵財務參數調校</h3>
-        
-        <!-- Collection Rate Slider -->
-        <div class="slider-group">
-          <div class="slider-header">
-            <span>管理費實質收繳率</span>
-            <span class="slider-val" id="val-collection-rate">95%</span>
-          </div>
-          <input type="range" id="slider-collection-rate" min="50" max="100" value="95" class="slider-control">
-          <div class="slider-labels">
-            <span>50% (極差)</span>
-            <span>75% (欠繳多)</span>
-            <span>100% (全繳)</span>
-          </div>
+        <div id="whatif-sliders-container" style="display: flex; flex-direction: column; gap: 1rem;">
+          <!-- Generated dynamically by JS -->
         </div>
-        
-        <!-- Fee Adjuster Slider -->
-        <div class="slider-group">
-          <div class="slider-header">
-            <span>管理費收費標準調整</span>
-            <span class="slider-val" id="val-adj-rate">0%</span>
-          </div>
-          <input type="range" id="slider-adj-rate" min="-20" max="50" step="5" value="0" class="slider-control">
-          <div class="slider-labels">
-            <span>調降 20%</span>
-            <span>維持現狀</span>
-            <span>調漲 50%</span>
-          </div>
-        </div>
-        
-        <!-- Admin Salary Adjuster -->
-        <div class="slider-group" style="margin-bottom: 0;">
-          <div class="slider-header">
-            <span>行政與總幹事薪資乘數</span>
-            <span class="slider-val" id="val-admin-multiplier">100%</span>
-          </div>
-          <input type="range" id="slider-admin-multiplier" min="0.8" max="1.5" step="0.05" value="1.0" class="slider-control">
-          <div class="slider-labels">
-            <span>調降 20%</span>
-            <span>100% (基準)</span>
-            <span>調漲 50%</span>
-          </div>
-        </div>
+        <button class="btn btn-secondary" style="width: 100%; margin-top: 1rem; justify-content: center;" onclick="openAddWhatIfModal()">
+          <i data-lucide="plus-circle"></i> 新增調校參數
+        </button>
       </div>
       
       <!-- Recurring Budget Table Card -->
@@ -329,10 +305,11 @@
   <div class="modal-overlay" id="modal-add-event">
     <div class="modal">
       <div class="modal-header">
-        <h3>新增重大修繕或資金事件</h3>
+        <h3 id="modal-event-header-title">新增重大修繕或資金事件</h3>
         <button class="modal-close" onclick="closeAddEventModal()">&times;</button>
       </div>
       <div class="modal-body">
+        <input type="hidden" id="input-event-id" value="">
         <div class="form-group">
           <label for="input-event-name">工程/修繕/項目名稱</label>
           <input type="text" id="input-event-name" class="form-control" placeholder="例如：115年度消防工程修繕、追回管理費積欠...">
@@ -407,6 +384,55 @@
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeSaveScenarioModal()">取消</button>
         <button class="btn btn-primary" onclick="saveCurrentAsScenario()">儲存情境</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add What-If Parameter Modal -->
+  <div class="modal-overlay" id="modal-add-whatif">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>新增 What-If 財務調校參數</h3>
+        <button class="modal-close" onclick="closeAddWhatIfModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="input-whatif-name">參數名稱</label>
+          <input type="text" id="input-whatif-name" class="form-control" placeholder="例如：夏日電費增幅、商場租金調漲...">
+        </div>
+        <div class="form-group">
+          <label for="input-whatif-target">影響財務目標</label>
+          <select id="input-whatif-target" class="form-control">
+            <option value="management_fee_rate">管理費收費費率 (%)</option>
+            <option value="management_fee_collection">管理費實際收繳率 (%)</option>
+            <option value="personnel">行政與總幹事行政薪資 (%)</option>
+            <option value="maintenance">公共機電與消防保養費 (%)</option>
+            <option value="utilities">大公小公電費開支 (%)</option>
+            <option value="admin">管理室零用與行政雜支 (%)</option>
+            <option value="parking">車位清潔費與停車租金 (%)</option>
+            <option value="commercial">B1 商場/超市管理費 (%)</option>
+            <option value="all_income">全體經常性收入 (%)</option>
+            <option value="all_expenses">全體經常性支出 (%)</option>
+          </select>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="input-whatif-min">最小值 (%)</label>
+            <input type="number" id="input-whatif-min" class="form-control" value="50">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="input-whatif-max">最大值 (%)</label>
+            <input type="number" id="input-whatif-max" class="form-control" value="150">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="input-whatif-default">預設值 (%)</label>
+            <input type="number" id="input-whatif-default" class="form-control" value="100">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeAddWhatIfModal()">取消</button>
+        <button class="btn btn-primary" onclick="submitAddWhatIf()">新增參數</button>
       </div>
     </div>
   </div>

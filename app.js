@@ -110,10 +110,9 @@ let state = {
     currentAccount: 441332,
     publicReserve: 1262604
   },
-  collectionRate: 95,
-  adjustmentRate: 0,
-  adminCostMultiplier: 1.0,
+  monthsToSimulate: 12, // Default to 12 months
   safetyLine: 500000,
+  whatIfParams: [], // Dynamic parameter sliders array
   recurringIncome: [],
   recurringExpenses: [],
   specialEvents: [],
@@ -145,7 +144,7 @@ function getMonthLabels(startMonthOffset = 0, count = 24) {
 
 // --- Simulation Core ---
 function runSimulation() {
-  const monthsToSimulate = 24;
+  const monthsToSimulate = state.monthsToSimulate || 12;
   const data = [];
   
   let currentCash = state.balances.currentAccount;
@@ -155,14 +154,40 @@ function runSimulation() {
     // 1. Calculate Monthly Income
     let monthlyIncome = 0;
     state.recurringIncome.forEach(item => {
+      let multiplier = 1;
+      
       if (item.category === 'management_fee') {
-        // Apply adjustment rate & collection rate
+        // Management fee collection
+        let collectionRate = 95;
+        const collectionParam = state.whatIfParams.find(p => p.target === 'management_fee_collection');
+        if (collectionParam) collectionRate = collectionParam.value;
+        
+        // Management fee rate adjustment
+        let adjRate = 0;
+        const adjParam = state.whatIfParams.find(p => p.target === 'management_fee_rate');
+        if (adjParam) adjRate = adjParam.value;
+        
+        // Any custom multipliers affecting management_fee or all_income
+        state.whatIfParams.forEach(p => {
+          if (p.id !== 'param-collection' && p.id !== 'param-fee-adj') {
+            if (p.target === 'management_fee' || p.target === 'all_income') {
+              multiplier *= (p.value / 100);
+            }
+          }
+        });
+        
         const rawFee = item.value;
-        const adjustedFee = rawFee * (1 + state.adjustmentRate / 100);
-        const collectedFee = adjustedFee * (state.collectionRate / 100);
+        const adjustedFee = rawFee * (1 + adjRate / 100);
+        const collectedFee = adjustedFee * (collectionRate / 100) * multiplier;
         monthlyIncome += collectedFee;
       } else {
-        monthlyIncome += item.value;
+        // Apply parameters that target this category or all_income
+        state.whatIfParams.forEach(p => {
+          if (p.target === item.category || p.target === 'all_income') {
+            multiplier *= (p.value / 100);
+          }
+        });
+        monthlyIncome += item.value * multiplier;
       }
     });
     
@@ -170,16 +195,18 @@ function runSimulation() {
     let monthlyExpense = 0;
     state.recurringExpenses.forEach(item => {
       // Lease payment "昕保租賃(新光監視器)" is 12 periods, assume it ends after month 10 (as it was second period in March 115)
-      // For simplicity, if id is exp-8 (lease) and month is past month 10, do not include it.
       if (item.id === 'exp-8' && m > 10) {
         return; 
       }
       
-      if (item.category === 'personnel') {
-        monthlyExpense += item.value * state.adminCostMultiplier;
-      } else {
-        monthlyExpense += item.value;
-      }
+      let multiplier = 1;
+      state.whatIfParams.forEach(p => {
+        if (p.target === item.category || p.target === 'all_expenses') {
+          multiplier *= (p.value / 100);
+        }
+      });
+      
+      monthlyExpense += item.value * multiplier;
     });
     
     // 3. Apply Special Events for this month
@@ -213,7 +240,7 @@ function runSimulation() {
     
     data.push({
       month: m,
-      label: getMonthLabels(0, 24)[m-1],
+      label: getMonthLabels(0, monthsToSimulate)[m-1],
       recurringIncome: monthlyIncome,
       eventIncome: eventIncome,
       totalIncome: totalIncome,
@@ -268,18 +295,24 @@ function updateDashboard() {
   
   // Admin Budget Tracker alert (based on CP950 doubts about $300k admin salary rate)
   // Let's calculate the projected 12-month administrative personnel spending
-  const annualPersonnelExpense = results.slice(0, 12).reduce((sum, r) => {
-    // personnel is part of monthly recurring expense, specifically:
-    // exp-1 ($41567) + exp-2 ($13500) + exp-3 ($4830) = $59,897
-    // Let's fetch the exact personnel item values from state
+  let totalPersonnelExpense = 0;
+  results.forEach(r => {
     let monthlyPersonnel = 0;
     state.recurringExpenses.forEach(item => {
       if (item.category === 'personnel') {
-        monthlyPersonnel += item.value * state.adminCostMultiplier;
+        let multiplier = 1;
+        state.whatIfParams.forEach(p => {
+          if (p.target === 'personnel' || p.target === 'all_expenses') {
+            multiplier *= (p.value / 100);
+          }
+        });
+        monthlyPersonnel += item.value * multiplier;
       }
     });
-    return sum + monthlyPersonnel;
-  }, 0);
+    totalPersonnelExpense += monthlyPersonnel;
+  });
+  
+  const annualPersonnelExpense = (totalPersonnelExpense / state.monthsToSimulate) * 12;
   
   const adminAlertEl = document.getElementById('admin-budget-warning');
   if (annualPersonnelExpense > 300000) {
@@ -306,7 +339,7 @@ function renderChart(results) {
   const netFlowData = results.map(r => r.netFlow);
   
   // Create safety line datasets
-  const safetyLineData = Array(24).fill(state.safetyLine);
+  const safetyLineData = Array(results.length).fill(state.safetyLine);
   
   // Scenario comparisons datasets
   const comparisonDatasets = [];
@@ -467,10 +500,19 @@ function loadPreset(presetName) {
   if (!preset) return;
   
   state.balances = { ...preset.balances };
-  state.collectionRate = preset.collectionRate;
-  state.adjustmentRate = preset.adjustmentRate;
-  state.adminCostMultiplier = preset.adminCostMultiplier;
+  state.monthsToSimulate = preset.monthsToSimulate || 12;
   state.safetyLine = preset.safetyLine || 500000;
+  
+  // Initialize default whatIfParams dynamically from preset
+  state.whatIfParams = [
+    { id: 'param-collection', name: '管理費實質收繳率', target: 'management_fee_collection', min: 50, max: 100, default: 95, value: preset.collectionRate ?? 95, unit: '%' },
+    { id: 'param-fee-adj', name: '管理費收費標準調整', target: 'management_fee_rate', min: -20, max: 50, default: 0, value: preset.adjustmentRate ?? 0, unit: '%' },
+    { id: 'param-admin-multi', name: '行政與總幹事薪資乘數', target: 'personnel', min: 80, max: 150, default: 100, value: Math.round((preset.adminCostMultiplier ?? 1.0) * 100), unit: '%' }
+  ];
+  
+  if (preset.whatIfParams) {
+    state.whatIfParams = JSON.parse(JSON.stringify(preset.whatIfParams));
+  }
   
   state.recurringIncome = JSON.parse(JSON.stringify(preset.recurringIncome));
   state.recurringExpenses = JSON.parse(JSON.stringify(preset.recurringExpenses));
@@ -479,7 +521,9 @@ function loadPreset(presetName) {
   syncStateToInputs();
   renderIncomeTable();
   renderExpenseTable();
+  renderWhatIfSliders();
   renderEventsTimeline();
+  updateEventMonthDropdown();
   updateDashboard();
   showToast(`已載入預設案: ${preset.name}`, 'success');
 }
@@ -488,16 +532,20 @@ function syncStateToInputs() {
   document.getElementById('input-current-balance').value = state.balances.currentAccount;
   document.getElementById('input-reserve-balance').value = state.balances.publicReserve;
   document.getElementById('input-safety-line').value = state.safetyLine;
-  
-  // Sliders
-  document.getElementById('slider-collection-rate').value = state.collectionRate;
-  document.getElementById('val-collection-rate').innerText = `${state.collectionRate}%`;
-  
-  document.getElementById('slider-adj-rate').value = state.adjustmentRate;
-  document.getElementById('val-adj-rate').innerText = `${state.adjustmentRate >= 0 ? '+' : ''}${state.adjustmentRate}%`;
-  
-  document.getElementById('slider-admin-multiplier').value = state.adminCostMultiplier;
-  document.getElementById('val-admin-multiplier').innerText = `${Math.round(state.adminCostMultiplier * 100)}%`;
+  document.getElementById('select-simulate-months').value = state.monthsToSimulate || 12;
+}
+
+function updateEventMonthDropdown() {
+  const select = document.getElementById('input-event-month');
+  if (!select) return;
+  select.innerHTML = '';
+  const labels = getMonthLabels(0, state.monthsToSimulate);
+  for (let i = 1; i <= state.monthsToSimulate; i++) {
+    const option = document.createElement('option');
+    option.value = i;
+    option.text = `第 ${i} 個月 (${labels[i - 1]})`;
+    select.appendChild(option);
+  }
 }
 
 // --- Tables Rendering ---
@@ -625,9 +673,10 @@ function renderEventsTimeline() {
   if (!container) return;
   container.innerHTML = '';
   
-  const monthLabels = getMonthLabels(0, 24);
+  const monthsToSimulate = state.monthsToSimulate || 12;
+  const monthLabels = getMonthLabels(0, monthsToSimulate);
   
-  for (let m = 1; m <= 24; m++) {
+  for (let m = 1; m <= monthsToSimulate; m++) {
     const monthLabel = monthLabels[m - 1];
     const monthEvents = state.specialEvents.filter(e => parseInt(e.monthOffset) === m);
     
@@ -643,7 +692,8 @@ function renderEventsTimeline() {
         eventsHtml += `
           <div class="event-pill ${evt.type}" 
                draggable="true" 
-               data-id="${evt.id}">
+               data-id="${evt.id}"
+               onclick="openEditEventModal('${evt.id}')">
             <span class="event-pill-info" title="${evt.name} (${evt.type === 'income' ? '單次收入' : '單次支出'}: ${formatCurrency(evt.value)})">
               ${evt.name} (${evt.type === 'income' ? '+' : '-'}${Math.round(evt.value/1000)}k)
             </span>
@@ -713,11 +763,11 @@ function initDragAndDrop() {
       const targetMonth = parseInt(slot.getAttribute('data-month'));
       
       const idx = state.specialEvents.findIndex(x => x.id === eventId);
-      if (idx !== -1 && targetMonth >= 1 && targetMonth <= 24) {
+      if (idx !== -1 && targetMonth >= 1 && targetMonth <= state.monthsToSimulate) {
         state.specialEvents[idx].monthOffset = targetMonth;
         renderEventsTimeline();
         updateDashboard();
-        showToast(`已移動項目至 ${getMonthLabels(0, 24)[targetMonth - 1]}`, 'success');
+        showToast(`已移動項目至 ${getMonthLabels(0, state.monthsToSimulate)[targetMonth - 1]}`, 'success');
       }
     });
   });
@@ -730,6 +780,119 @@ function deleteEvent(id) {
   showToast('重大事件已刪除', 'warning');
 }
 
+// --- Dynamic What-If Sliders Handling ---
+function renderWhatIfSliders() {
+  const container = document.getElementById('whatif-sliders-container');
+  if (!container) return;
+  container.innerHTML = '';
+  
+  state.whatIfParams.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'slider-group';
+    
+    let valStr = `${p.value}%`;
+    if (p.target === 'management_fee_rate' && p.value >= 0) {
+      valStr = `+${p.value}%`;
+    }
+    
+    div.innerHTML = `
+      <div class="slider-header">
+        <div class="slider-header-left">
+          <button class="slider-delete-btn" onclick="deleteWhatIfParam('${p.id}')" title="刪除此參數">
+            <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i>
+          </button>
+          <span>${p.name}</span>
+        </div>
+        <span class="slider-val" id="val-slider-${p.id}">${valStr}</span>
+      </div>
+      <input type="range" class="slider-control whatif-slider" 
+             data-id="${p.id}" 
+             min="${p.min}" 
+             max="${p.max}" 
+             value="${p.value}">
+      <div class="slider-labels">
+        <span>${p.min}%</span>
+        <span>${p.default}% (預設)</span>
+        <span>${p.max}%</span>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+  
+  // Bind dynamic sliders event
+  container.querySelectorAll('.whatif-slider').forEach(slider => {
+    slider.addEventListener('input', (e) => {
+      const id = e.target.getAttribute('data-id');
+      const val = parseInt(e.target.value);
+      
+      const idx = state.whatIfParams.findIndex(p => p.id === id);
+      if (idx !== -1) {
+        state.whatIfParams[idx].value = val;
+        
+        const p = state.whatIfParams[idx];
+        let valStr = `${val}%`;
+        if (p.target === 'management_fee_rate' && val >= 0) {
+          valStr = `+${val}%`;
+        }
+        document.getElementById(`val-slider-${p.id}`).innerText = valStr;
+        
+        updateDashboard();
+      }
+    });
+  });
+  
+  lucide.createIcons();
+}
+
+function deleteWhatIfParam(id) {
+  state.whatIfParams = state.whatIfParams.filter(p => p.id !== id);
+  renderWhatIfSliders();
+  updateDashboard();
+  showToast('已刪除調校參數', 'warning');
+}
+
+function openAddWhatIfModal() {
+  const modal = document.getElementById('modal-add-whatif');
+  document.getElementById('input-whatif-name').value = '';
+  document.getElementById('input-whatif-min').value = '50';
+  document.getElementById('input-whatif-max').value = '150';
+  document.getElementById('input-whatif-default').value = '100';
+  modal.classList.add('active');
+}
+
+function closeAddWhatIfModal() {
+  document.getElementById('modal-add-whatif').classList.remove('active');
+}
+
+function submitAddWhatIf() {
+  const name = document.getElementById('input-whatif-name').value.trim();
+  const target = document.getElementById('input-whatif-target').value;
+  const min = parseInt(document.getElementById('input-whatif-min').value) || 0;
+  const max = parseInt(document.getElementById('input-whatif-max').value) || 200;
+  const defaultValue = parseInt(document.getElementById('input-whatif-default').value) || 100;
+  
+  if (!name) {
+    showToast('請輸入參數名稱', 'warning');
+    return;
+  }
+  
+  const newParam = {
+    id: `param-custom-${Date.now()}`,
+    name: name,
+    target: target,
+    min: min,
+    max: max,
+    default: defaultValue,
+    value: defaultValue
+  };
+  
+  state.whatIfParams.push(newParam);
+  renderWhatIfSliders();
+  closeAddWhatIfModal();
+  updateDashboard();
+  showToast('已新增自訂財務參數', 'success');
+}
+
 // --- Scenario Management ---
 function renderScenarios() {
   const container = document.getElementById('scenarios-container');
@@ -738,12 +901,17 @@ function renderScenarios() {
   for (let i = 0; i < 3; i++) {
     const sc = state.scenarios[i];
     if (sc) {
+      const collectionParam = sc.state.whatIfParams ? sc.state.whatIfParams.find(p => p.target === 'management_fee_collection') : null;
+      const adjParam = sc.state.whatIfParams ? sc.state.whatIfParams.find(p => p.target === 'management_fee_rate') : null;
+      const collectionVal = collectionParam ? collectionParam.value : 95;
+      const adjVal = adjParam ? adjParam.value : 0;
+      
       const div = document.createElement('div');
       div.className = `scenario-item ${sc.compared ? 'active' : ''}`;
       div.innerHTML = `
         <div>
           <h5>${sc.name}</h5>
-          <p class="scenario-desc">收繳率: ${sc.state.collectionRate}% | 調幅: ${sc.state.adjustmentRate}% | 安全線: ${formatCurrency(sc.state.safetyLine)}</p>
+          <p class="scenario-desc">預測期數: ${sc.state.monthsToSimulate || 12}月 | 收繳: ${collectionVal}% | 調幅: ${adjVal}% | 安全線: ${formatCurrency(sc.state.safetyLine)}</p>
         </div>
         <div class="scenario-foot">
           <div class="scenario-actions">
@@ -798,10 +966,9 @@ function saveCurrentAsScenario() {
     compared: true, // Auto show in comparison
     state: JSON.parse(JSON.stringify({
       balances: state.balances,
-      collectionRate: state.collectionRate,
-      adjustmentRate: state.adjustmentRate,
-      adminCostMultiplier: state.adminCostMultiplier,
+      monthsToSimulate: state.monthsToSimulate,
       safetyLine: state.safetyLine,
+      whatIfParams: state.whatIfParams,
       recurringIncome: state.recurringIncome,
       recurringExpenses: state.recurringExpenses,
       specialEvents: state.specialEvents
@@ -819,10 +986,18 @@ function loadScenario(index) {
   if (!sc) return;
   
   state.balances = JSON.parse(JSON.stringify(sc.state.balances));
-  state.collectionRate = sc.state.collectionRate;
-  state.adjustmentRate = sc.state.adjustmentRate;
-  state.adminCostMultiplier = sc.state.adminCostMultiplier;
+  state.monthsToSimulate = sc.state.monthsToSimulate || 12;
   state.safetyLine = sc.state.safetyLine || 500000;
+  
+  if (sc.state.whatIfParams) {
+    state.whatIfParams = JSON.parse(JSON.stringify(sc.state.whatIfParams));
+  } else {
+    state.whatIfParams = [
+      { id: 'param-collection', name: '管理費實質收繳率', target: 'management_fee_collection', min: 50, max: 100, default: 95, value: sc.state.collectionRate ?? 95, unit: '%' },
+      { id: 'param-fee-adj', name: '管理費收費標準調整', target: 'management_fee_rate', min: -20, max: 50, default: 0, value: sc.state.adjustmentRate ?? 0, unit: '%' },
+      { id: 'param-admin-multi', name: '行政與總幹事薪資乘數', target: 'personnel', min: 80, max: 150, default: 100, value: Math.round((sc.state.adminCostMultiplier ?? 1.0) * 100), unit: '%' }
+    ];
+  }
   
   state.recurringIncome = JSON.parse(JSON.stringify(sc.state.recurringIncome));
   state.recurringExpenses = JSON.parse(JSON.stringify(sc.state.recurringExpenses));
@@ -831,7 +1006,9 @@ function loadScenario(index) {
   syncStateToInputs();
   renderIncomeTable();
   renderExpenseTable();
+  renderWhatIfSliders();
   renderEventsTimeline();
+  updateEventMonthDropdown();
   updateDashboard();
   showToast(`已套用情境: ${sc.name}`, 'success');
 }
@@ -931,10 +1108,26 @@ function openAddEventModal() {
 
 function openAddEventModalDirect(month, type) {
   const modal = document.getElementById('modal-add-event');
+  document.getElementById('modal-event-header-title').innerText = type === 'income' ? '新增重大單次收入' : '新增重大單次支出';
+  document.getElementById('input-event-id').value = '';
   document.getElementById('input-event-name').value = '';
   document.getElementById('input-event-value').value = '';
   document.getElementById('input-event-type').value = type;
   document.getElementById('input-event-month').value = month;
+  modal.classList.add('active');
+}
+
+function openEditEventModal(id) {
+  const evt = state.specialEvents.find(x => x.id === id);
+  if (!evt) return;
+  
+  const modal = document.getElementById('modal-add-event');
+  document.getElementById('modal-event-header-title').innerText = '編輯重大項目 / 調整時程';
+  document.getElementById('input-event-id').value = evt.id;
+  document.getElementById('input-event-name').value = evt.name;
+  document.getElementById('input-event-value').value = evt.value;
+  document.getElementById('input-event-type').value = evt.type;
+  document.getElementById('input-event-month').value = evt.monthOffset;
   modal.classList.add('active');
 }
 
@@ -943,30 +1136,44 @@ function closeAddEventModal() {
 }
 
 function submitAddEvent() {
+  const id = document.getElementById('input-event-id').value;
   const name = document.getElementById('input-event-name').value.trim();
   const value = parseFloat(document.getElementById('input-event-value').value) || 0;
   const type = document.getElementById('input-event-type').value;
   const monthOffset = parseInt(document.getElementById('input-event-month').value) || 1;
   
   if (!name) {
-    showToast('請輸入修繕或工程名稱', 'warning');
+    showToast('請輸入項目名稱', 'warning');
     return;
   }
   
-  const newEvent = {
-    id: `evt-${Date.now()}`,
-    name: name,
-    value: value,
-    type: type,
-    monthOffset: monthOffset,
-    active: true
-  };
+  if (id) {
+    // Edit Mode
+    const idx = state.specialEvents.findIndex(x => x.id === id);
+    if (idx !== -1) {
+      state.specialEvents[idx].name = name;
+      state.specialEvents[idx].value = value;
+      state.specialEvents[idx].type = type;
+      state.specialEvents[idx].monthOffset = monthOffset;
+      showToast('項目已更新', 'success');
+    }
+  } else {
+    // Add Mode
+    const newEvent = {
+      id: `evt-${Date.now()}`,
+      name: name,
+      value: value,
+      type: type,
+      monthOffset: monthOffset,
+      active: true
+    };
+    state.specialEvents.push(newEvent);
+    showToast('已加入時間軸', 'success');
+  }
   
-  state.specialEvents.push(newEvent);
   renderEventsTimeline();
   closeAddEventModal();
   updateDashboard();
-  showToast('重大修繕/工程已加入時間軸', 'success');
 }
 
 // --- Import/Export Operations ---
@@ -992,10 +1199,9 @@ function exportToCSV() {
 function exportJSONConfig() {
   const config = {
     balances: state.balances,
-    collectionRate: state.collectionRate,
-    adjustmentRate: state.adjustmentRate,
-    adminCostMultiplier: state.adminCostMultiplier,
+    monthsToSimulate: state.monthsToSimulate,
     safetyLine: state.safetyLine,
+    whatIfParams: state.whatIfParams,
     recurringIncome: state.recurringIncome,
     recurringExpenses: state.recurringExpenses,
     specialEvents: state.specialEvents
@@ -1026,10 +1232,19 @@ function importJSONConfig(e) {
       
       if (imported.balances && imported.recurringIncome && imported.recurringExpenses) {
         state.balances = imported.balances;
-        state.collectionRate = imported.collectionRate ?? 95;
-        state.adjustmentRate = imported.adjustmentRate ?? 0;
-        state.adminCostMultiplier = imported.adminCostMultiplier ?? 1.0;
+        state.monthsToSimulate = imported.monthsToSimulate ?? 12;
         state.safetyLine = imported.safetyLine ?? 500000;
+        
+        if (imported.whatIfParams) {
+          state.whatIfParams = imported.whatIfParams;
+        } else {
+          state.whatIfParams = [
+            { id: 'param-collection', name: '管理費實質收繳率', target: 'management_fee_collection', min: 50, max: 100, default: 95, value: imported.collectionRate ?? 95, unit: '%' },
+            { id: 'param-fee-adj', name: '管理費收費標準調整', target: 'management_fee_rate', min: -20, max: 50, default: 0, value: imported.adjustmentRate ?? 0, unit: '%' },
+            { id: 'param-admin-multi', name: '行政與總幹事薪資乘數', target: 'personnel', min: 80, max: 150, default: 100, value: Math.round((imported.adminCostMultiplier ?? 1.0) * 100), unit: '%' }
+          ];
+        }
+        
         state.recurringIncome = imported.recurringIncome;
         state.recurringExpenses = imported.recurringExpenses;
         state.specialEvents = imported.specialEvents ?? [];
@@ -1037,7 +1252,9 @@ function importJSONConfig(e) {
         syncStateToInputs();
         renderIncomeTable();
         renderExpenseTable();
+        renderWhatIfSliders();
         renderEventsTimeline();
+        updateEventMonthDropdown();
         updateDashboard();
         showToast('設定檔導入成功', 'success');
       } else {
@@ -1120,26 +1337,12 @@ document.addEventListener('DOMContentLoaded', () => {
     updateDashboard();
   });
   
-  // 4. Slider event listeners
-  const sliderCollection = document.getElementById('slider-collection-rate');
-  sliderCollection.addEventListener('input', (e) => {
-    state.collectionRate = parseInt(e.target.value);
-    document.getElementById('val-collection-rate').innerText = `${state.collectionRate}%`;
+  // 4. Listen to Predict Months select
+  document.getElementById('select-simulate-months').addEventListener('change', (e) => {
+    state.monthsToSimulate = parseInt(e.target.value);
     updateDashboard();
-  });
-  
-  const sliderAdj = document.getElementById('slider-adj-rate');
-  sliderAdj.addEventListener('input', (e) => {
-    state.adjustmentRate = parseInt(e.target.value);
-    document.getElementById('val-adj-rate').innerText = `${state.adjustmentRate >= 0 ? '+' : ''}${state.adjustmentRate}%`;
-    updateDashboard();
-  });
-  
-  const sliderAdmin = document.getElementById('slider-admin-multiplier');
-  sliderAdmin.addEventListener('input', (e) => {
-    state.adminCostMultiplier = parseFloat(e.target.value);
-    document.getElementById('val-admin-multiplier').innerText = `${Math.round(state.adminCostMultiplier * 100)}%`;
-    updateDashboard();
+    renderEventsTimeline();
+    updateEventMonthDropdown();
   });
   
   // 5. Preset loader listener
