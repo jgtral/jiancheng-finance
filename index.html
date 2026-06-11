@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>建成社區財務收支與現金流模擬規劃工具</title>
+  <!-- Main CSS -->
+  <link rel="stylesheet" href="styles.css">
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body data-theme="dark">
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">
+        <i data-lucide="line-chart" style="width: 24px; height: 24px;"></i>
+      </div>
+      <div class="brand-info">
+        <h1>建成社區財務收支與現金流模擬規劃</h1>
+        <p>建成大樓管理委員會 • 財務專用試算工具</p>
+      </div>
+    </div>
+    
+    <div class="header-controls">
+      <!-- Preset Select -->
+      <div class="form-group" style="margin-bottom: 0; display: flex; align-items: center; gap: 0.5rem;">
+        <label for="select-preset" style="margin-bottom: 0; white-space: nowrap;">預設情境套用：</label>
+        <select id="select-preset" class="form-control" style="width: 220px; background-color: var(--bg-primary);">
+          <option value="jiancheng">建成社區 114年預估現狀</option>
+          <option value="healthy">健全情境 (管理費+10% & 催收)</option>
+          <option value="crisis">危機情境 (收繳率大跌 & 超支)</option>
+        </select>
+      </div>
+      
+      <!-- Actions -->
+      <button class="btn btn-secondary" onclick="exportToCSV()" title="匯出 CSV 資料報表">
+        <i data-lucide="file-spreadsheet"></i> 匯出報表
+      </button>
+      <button class="btn btn-secondary" onclick="exportJSONConfig()" title="下載規劃 JSON 檔案">
+        <i data-lucide="download"></i> 保存規劃
+      </button>
+      <button class="btn btn-secondary" onclick="triggerImportJSON()" title="導入 JSON 檔案">
+        <i data-lucide="upload"></i> 載入規劃
+      </button>
+      <input type="file" id="input-file-import" accept=".json" style="display: none;" onchange="importJSONConfig(event)">
+      
+      <button class="btn btn-secondary btn-icon-only" id="btn-toggle-theme" title="切換深/淺色主題">
+        <i data-lucide="sun"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Container -->
+  <div class="container">
+    
+    <!-- Left Sidebar: Controls -->
+    <aside class="sidebar">
+      
+      <!-- Starting Balances Card -->
+      <div class="card">
+        <h3 class="card-title">帳戶起點餘額 <span class="card-subtitle">(NTD)</span></h3>
+        
+        <div class="form-group">
+          <label for="input-current-balance">合庫活儲帳戶 (每日收支與調撥用)</label>
+          <div class="input-wrapper">
+            <span class="input-prefix">$</span>
+            <input type="number" id="input-current-balance" class="form-control has-prefix" value="441332">
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="input-reserve-balance">公共基金定存/保留帳戶 (緊急調用)</label>
+          <div class="input-wrapper">
+            <span class="input-prefix">$</span>
+            <input type="number" id="input-reserve-balance" class="form-control has-prefix" value="1262604">
+          </div>
+        </div>
+        
+        <div class="form-group" style="margin-bottom: 0;">
+          <label for="input-safety-line">安全準備金水位 (紅線水位線)</label>
+          <div class="input-wrapper">
+            <span class="input-prefix">$</span>
+            <input type="number" id="input-safety-line" class="form-control has-prefix" value="500000">
+          </div>
+        </div>
+      </div>
+      
+      <!-- What-if Sliders Card -->
+      <div class="card">
+        <h3 class="card-title">What-If 關鍵財務參數調校</h3>
+        
+        <!-- Collection Rate Slider -->
+        <div class="slider-group">
+          <div class="slider-header">
+            <span>管理費實質收繳率</span>
+            <span class="slider-val" id="val-collection-rate">95%</span>
+          </div>
+          <input type="range" id="slider-collection-rate" min="50" max="100" value="95" class="slider-control">
+          <div class="slider-labels">
+            <span>50% (極差)</span>
+            <span>75% (欠繳多)</span>
+            <span>100% (全繳)</span>
+          </div>
+        </div>
+        
+        <!-- Fee Adjuster Slider -->
+        <div class="slider-group">
+          <div class="slider-header">
+            <span>管理費收費標準調整</span>
+            <span class="slider-val" id="val-adj-rate">0%</span>
+          </div>
+          <input type="range" id="slider-adj-rate" min="-20" max="50" step="5" value="0" class="slider-control">
+          <div class="slider-labels">
+            <span>調降 20%</span>
+            <span>維持現狀</span>
+            <span>調漲 50%</span>
+          </div>
+        </div>
+        
+        <!-- Admin Salary Adjuster -->
+        <div class="slider-group" style="margin-bottom: 0;">
+          <div class="slider-header">
+            <span>行政與總幹事薪資乘數</span>
+            <span class="slider-val" id="val-admin-multiplier">100%</span>
+          </div>
+          <input type="range" id="slider-admin-multiplier" min="0.8" max="1.5" step="0.05" value="1.0" class="slider-control">
+          <div class="slider-labels">
+            <span>調降 20%</span>
+            <span>100% (基準)</span>
+            <span>調漲 50%</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Recurring Budget Table Card -->
+      <div class="card" style="flex-grow: 1; display: flex; flex-direction: column;">
+        <h3 class="card-title" style="margin-bottom: 0.5rem;">每月收支預算明細</h3>
+        
+        <div class="tabs-header">
+          <button class="tab-btn active" data-tab="income">經常性月收入</button>
+          <button class="tab-btn" data-tab="expense">經常性月支出</button>
+        </div>
+        
+        <!-- Income Tab -->
+        <div class="tab-content active" id="tab-income" style="flex-grow: 1; display: flex; flex-direction: column;">
+          <div class="table-container" style="flex-grow: 1;">
+            <table id="table-income">
+              <thead>
+                <tr>
+                  <th>收入項目</th>
+                  <th>分類</th>
+                  <th style="width: 130px;">每月預算</th>
+                  <th style="width: 40px; text-align: right;"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Generated by JS -->
+              </tbody>
+            </table>
+          </div>
+          <button class="btn btn-secondary" style="width: 100%; margin-top: 0.75rem; justify-content: center;" onclick="openAddItemModal('income')">
+            <i data-lucide="plus-circle"></i> 新增每月收入
+          </button>
+        </div>
+        
+        <!-- Expense Tab -->
+        <div class="tab-content" id="tab-expense" style="flex-grow: 1; display: flex; flex-direction: column;">
+          <div class="table-container" style="flex-grow: 1;">
+            <table id="table-expense">
+              <thead>
+                <tr>
+                  <th>支出項目</th>
+                  <th>分類</th>
+                  <th style="width: 130px;">每月預算</th>
+                  <th style="width: 40px; text-align: right;"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Generated by JS -->
+              </tbody>
+            </table>
+          </div>
+          <button class="btn btn-secondary" style="width: 100%; margin-top: 0.75rem; justify-content: center;" onclick="openAddItemModal('expense')">
+            <i data-lucide="plus-circle"></i> 新增每月支出
+          </button>
+        </div>
+      </div>
+      
+    </aside>
+    
+    <!-- Right Main Panel: Dashboard & Charts -->
+    <main class="main-panel">
+      
+      <!-- Budget Overrun Warning Banner -->
+      <div id="admin-budget-warning" class="alert-popup warning" style="position: static; transform: none; opacity: 1; display: none; width: 100%; box-shadow: none; margin-bottom: 0; padding: 0.8rem 1.2rem; border-radius: var(--radius-md);">
+        <!-- Warning text generated by JS -->
+      </div>
+      
+      <!-- KPI Indicators -->
+      <div class="kpi-grid">
+        <div class="card kpi-card">
+          <div class="kpi-icon primary">
+            <i data-lucide="wallet"></i>
+          </div>
+          <div class="kpi-info">
+            <h4>預估兩年後期末總資產</h4>
+            <div class="kpi-value" id="kpi-total-cash">$0</div>
+            <div class="kpi-indicator" id="safety-status">
+              <span class="text-success"><i data-lucide="check-circle"></i> 財務狀況安全</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card kpi-card">
+          <div class="kpi-icon secondary">
+            <i data-lucide="piggy-bank"></i>
+          </div>
+          <div class="kpi-info">
+            <h4>預估期末活期餘額</h4>
+            <div class="kpi-value" id="kpi-current-cash">$0</div>
+            <div class="kpi-indicator text-muted">合庫活儲存款餘額</div>
+          </div>
+        </div>
+        
+        <div class="card kpi-card">
+          <div class="kpi-icon warning">
+            <i data-lucide="shield-check"></i>
+          </div>
+          <div class="kpi-info">
+            <h4>預估期末公積金定存</h4>
+            <div class="kpi-value" id="kpi-reserve-cash">$0</div>
+            <div class="kpi-indicator text-muted">公共基金定存保留款</div>
+          </div>
+        </div>
+        
+        <div class="card kpi-card">
+          <div class="kpi-icon danger">
+            <i data-lucide="arrow-left-right"></i>
+          </div>
+          <div class="kpi-info">
+            <h4>預估月均收支淨流</h4>
+            <div class="kpi-value" id="kpi-avg-net">$0</div>
+            <div class="kpi-indicator text-muted">正值代表月盈餘，負值代表月虧損</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Chart Card -->
+      <div class="card">
+        <div class="card-title">
+          <span>24 個月現金流走勢及單月收支淨流預測</span>
+          <span class="card-subtitle">折線圖代表累積資產，柱狀圖代表當月收支淨額 (紫色線低於紅色虛線即表示有水位警告)</span>
+        </div>
+        <div class="chart-container">
+          <canvas id="cashflowChartCanvas"></canvas>
+        </div>
+      </div>
+      
+      <!-- Timeline Events Card (Major Repairs/Projects) -->
+      <div class="card">
+        <div class="card-title">
+          <span>未來 24 個月單次大宗收支規劃時間軸 (可按住項目拖曳至目標月份進行排程)</span>
+          <button class="btn btn-secondary btn-icon-only" style="border-radius: var(--radius-sm); font-size: 0.75rem; width: auto; padding: 0.3rem 0.6rem; height: auto;" onclick="openAddEventModal()">
+            <i data-lucide="plus-circle" style="width: 14px; height: 14px;"></i> 新增重大項目
+          </button>
+        </div>
+        <div class="timeline-grid" id="timeline-container">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+      
+      <!-- Scenarios Comparison Card -->
+      <div class="card">
+        <h3 class="card-title">
+          <span>財務情境對比管理器 <span class="card-subtitle">(最多可存 3 組對比方案)</span></span>
+        </h3>
+        <div class="scenario-grid" id="scenarios-container">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+      
+    </main>
+  </div>
+
+  <!-- MODALS -->
+  
+  <!-- Add Budget Item Modal -->
+  <div class="modal-overlay" id="modal-add-item">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modal-add-item-title">新增經常性項目</h3>
+        <button class="modal-close" onclick="closeAddItemModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="modal-item-type">
+        
+        <div class="form-group">
+          <label for="input-item-name">項目名稱</label>
+          <input type="text" id="input-item-name" class="form-control" placeholder="例如：消防避雷針保養費、廣告租金...">
+        </div>
+        
+        <div class="form-group">
+          <label for="input-item-value">預估金額 (NTD / 每月)</label>
+          <div class="input-wrapper">
+            <span class="input-prefix">$</span>
+            <input type="number" id="input-item-value" class="form-control has-prefix" placeholder="0">
+          </div>
+        </div>
+        
+        <div class="form-group" style="margin-bottom: 0;">
+          <label for="input-item-category">會計科目分類</label>
+          <select id="input-item-category" class="form-control">
+            <!-- Dynamic options -->
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeAddItemModal()">取消</button>
+        <button class="btn btn-primary" onclick="submitAddItem()">新增項目</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Major Timeline Event Modal -->
+  <div class="modal-overlay" id="modal-add-event">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>新增重大修繕或資金事件</h3>
+        <button class="modal-close" onclick="closeAddEventModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="input-event-name">工程/修繕/項目名稱</label>
+          <input type="text" id="input-event-name" class="form-control" placeholder="例如：115年度消防工程修繕、追回管理費積欠...">
+        </div>
+        
+        <div class="form-group">
+          <label for="input-event-type">收支屬性</label>
+          <select id="input-event-type" class="form-control">
+            <option value="expense">單次支出 (大宗修繕發包)</option>
+            <option value="income">單次收入 (催收補繳、政府補助)</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="input-event-value">項目金額 (NTD)</label>
+          <div class="input-wrapper">
+            <span class="input-prefix">$</span>
+            <input type="number" id="input-event-value" class="form-control has-prefix" placeholder="0">
+          </div>
+        </div>
+        
+        <div class="form-group" style="margin-bottom: 0;">
+          <label for="input-event-month">預計發生月份 (第 1 至 24 個月)</label>
+          <select id="input-event-month" class="form-control">
+            <option value="1">第 1 個月 (本月)</option>
+            <option value="2">第 2 個月 (下月)</option>
+            <option value="3">第 3 個月</option>
+            <option value="4">第 4 個月</option>
+            <option value="5">第 5 個月</option>
+            <option value="6">第 6 個月</option>
+            <option value="7">第 7 個月</option>
+            <option value="8">第 8 個月</option>
+            <option value="9">第 9 個月</option>
+            <option value="10">第 10 個月</option>
+            <option value="11">第 11 個月</option>
+            <option value="12">第 12 個月</option>
+            <option value="13">第 13 個月</option>
+            <option value="14">第 14 個月</option>
+            <option value="15">第 15 個月</option>
+            <option value="16">第 16 個月</option>
+            <option value="17">第 17 個月</option>
+            <option value="18">第 18 個月</option>
+            <option value="19">第 19 個月</option>
+            <option value="20">第 20 個月</option>
+            <option value="21">第 21 個月</option>
+            <option value="22">第 22 個月</option>
+            <option value="23">第 23 個月</option>
+            <option value="24">第 24 個月</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeAddEventModal()">取消</button>
+        <button class="btn btn-primary" onclick="submitAddEvent()">加入時間軸</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Save Scenario Modal -->
+  <div class="modal-overlay" id="modal-save-scenario">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>儲存當前規劃為對比情境</h3>
+        <button class="modal-close" onclick="closeSaveScenarioModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label for="input-scenario-name">情境名稱</label>
+          <input type="text" id="input-scenario-name" class="form-control" placeholder="例如：調漲10%無修繕、公安申報大工程案...">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeSaveScenarioModal()">取消</button>
+        <button class="btn btn-primary" onclick="saveCurrentAsScenario()">儲存情境</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div class="alert-popup" id="toast-alert">
+    <div class="toast-icon-wrapper">
+      <i data-lucide="info"></i>
+    </div>
+    <div class="toast-text">
+      訊息通知內容
+    </div>
+  </div>
+
+  <!-- Main JS Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
