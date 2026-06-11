@@ -29,10 +29,25 @@ const PRESETS = {
       { id: "exp-8", name: "昕保監視器租賃 (分期12期)", value: 27530, category: "loan" } // 12期分期
     ],
     specialEvents: [
-      { id: "evt-1", name: "40萬消防公安修繕申報工程", value: 400000, type: "expense", monthOffset: 2, active: true },
-      { id: "evt-2", name: "追回 B1 商場積欠管理費", value: 200000, type: "income", monthOffset: 4, active: true },
-      { id: "evt-3", name: "龍祥電梯系統更新尾款50%", value: 165000, type: "expense", monthOffset: 6, active: true },
-      { id: "evt-4", name: "水塔清洗與化糞池清理", value: 25000, type: "expense", monthOffset: 3, active: true }
+      { id: "evt-b1-recover", name: "追回 B1 商場積欠管理費", value: 200000, type: "income", monthOffset: 4, active: true },
+      { id: "evt-elevator-tail", name: "龍祥電梯系統更新尾款50%", value: 165000, type: "expense", monthOffset: 6, active: true },
+      { id: "evt-sewer-clean", name: "水塔清洗與化糞池清理", value: 25000, type: "expense", monthOffset: 3, active: true },
+      { id: "evt-new-1", name: "11F~15F消防灑水測試(機組送電)", value: 80000, type: "expense", monthOffset: 2, active: true },
+      { id: "evt-new-2", name: "B2授信總機迴路未連接查修工程", value: 84500, type: "expense", monthOffset: 3, active: true },
+      { id: "evt-new-3", name: "B3消防室泡沫機組控制異常檢修", value: 12000, type: "expense", monthOffset: 2, active: true },
+      { id: "evt-new-4", name: "B3第69車位廢水池右泵浦逆止閥修復", value: 14000, type: "expense", monthOffset: 3, active: true },
+      { id: "evt-new-5", name: "B3龍江3號防火門鏽蝕更新", value: 40000, type: "expense", monthOffset: 4, active: true },
+      { id: "evt-new-6", name: "龍祥大門上方採光罩破損更新", value: 35000, type: "expense", monthOffset: 4, active: true },
+      { id: "evt-new-7", name: "車道鐵板發出聲響夜間擾民改善工程", value: 1000, type: "expense", monthOffset: 1, active: true },
+      { id: "evt-new-8", name: "龍江/龍祥11F~15F管道間防火檢修口", value: 300000, type: "expense", monthOffset: 7, active: true },
+      { id: "evt-new-9", name: "B1/B2/B3 防火泥填塞工程", value: 250000, type: "expense", monthOffset: 8, active: true },
+      { id: "evt-new-10", name: "安全門下方門檻剷平及順平工程", value: 40000, type: "expense", monthOffset: 5, active: true },
+      { id: "evt-new-11", name: "機車停車格劃設與編號分配", value: 40000, type: "expense", monthOffset: 5, active: true },
+      { id: "evt-new-12", name: "管理室門窗紗窗及遮光窗簾(西曬改善)", value: 2000, type: "expense", monthOffset: 1, active: true },
+      { id: "evt-new-13", name: "評估管理室窗戶外推小平台可行性", value: 2000, type: "expense", monthOffset: 1, active: true },
+      { id: "evt-new-14", name: "B2授信總機室門配鎖管理", value: 1000, type: "expense", monthOffset: 1, active: true },
+      { id: "evt-new-15", name: "B1漏水處理(連續壁漏水損害B2/B3牆)", value: 2000000, type: "expense", monthOffset: 10, active: false }, // Inactive by default
+      { id: "evt-new-16", name: "慶泰-龍祥花台與出入口空鼓地磚重鋪", value: 50000, type: "expense", monthOffset: 6, active: true }
     ]
   },
   crisis: {
@@ -62,10 +77,25 @@ const PRESETS = {
       { id: "exp-8", name: "昕保監視器租賃 (分期12期)", value: 27530, category: "loan" }
     ],
     specialEvents: [
-      { id: "evt-1", name: "40萬消防公安修繕申報工程", value: 400000, type: "expense", monthOffset: 2, active: true },
-      { id: "evt-2", name: "追回 B1 商場積欠管理費 (失敗)", value: 0, type: "income", monthOffset: 4, active: false },
-      { id: "evt-3", name: "龍祥電梯系統更新尾款50%", value: 165000, type: "expense", monthOffset: 6, active: true },
-      { id: "evt-4", name: "水塔清洗與化糞池清理", value: 25000, type: "expense", monthOffset: 3, active: true }
+      { id: "evt-b1-recover", name: "追回 B1 商場積欠管理費 (失敗)", value: 0, type: "income", monthOffset: 4, active: false },
+      { id: "evt-elevator-tail", name: "龍祥電梯系統更新尾款50%", value: 165000, type: "expense", monthOffset: 6, active: true },
+      { id: "evt-sewer-clean", name: "水塔清洗與化糞池清理", value: 25000, type: "expense", monthOffset: 3, active: true },
+      { id: "evt-new-1", name: "11F~15F消防灑水測試(機組送電)", value: 80000, type: "expense", monthOffset: 2, active: true },
+      { id: "evt-new-2", name: "B2授信總機迴路未連接查修工程", value: 84500, type: "expense", monthOffset: 3, active: true },
+      { id: "evt-new-3", name: "B3消防室泡沫機組控制異常檢修", value: 12000, type: "expense", monthOffset: 2, active: true },
+      { id: "evt-new-4", name: "B3第69車位廢水池右泵浦逆止閥修復", value: 14000, type: "expense", monthOffset: 3, active: true },
+      { id: "evt-new-5", name: "B3龍江3號防火門鏽蝕更新", value: 40000, type: "expense", monthOffset: 4, active: true },
+      { id: "evt-new-6", name: "龍祥大門上方採光罩破損更新", value: 35000, type: "expense", monthOffset: 4, active: true },
+      { id: "evt-new-7", name: "車道鐵板發出聲響夜間擾民改善工程", value: 1000, type: "expense", monthOffset: 1, active: true },
+      { id: "evt-new-8", name: "龍江/龍祥11F~15F管道間防火檢修口", value: 300000, type: "expense", monthOffset: 7, active: true },
+      { id: "evt-new-9", name: "B1/B2/B3 防火泥填塞工程", value: 250000, type: "expense", monthOffset: 8, active: true },
+      { id: "evt-new-10", name: "安全門下方門檻剷平及順平工程", value: 40000, type: "expense", monthOffset: 5, active: true },
+      { id: "evt-new-11", name: "機車停車格劃設與編號分配", value: 40000, type: "expense", monthOffset: 5, active: true },
+      { id: "evt-new-12", name: "管理室門窗紗窗及遮光窗簾(西曬改善)", value: 2000, type: "expense", monthOffset: 1, active: true },
+      { id: "evt-new-13", name: "評估管理室窗戶外推小平台可行性", value: 2000, type: "expense", monthOffset: 1, active: true },
+      { id: "evt-new-14", name: "B2授信總機室門配鎖管理", value: 1000, type: "expense", monthOffset: 1, active: true },
+      { id: "evt-new-15", name: "B1漏水處理(連續壁漏水損害B2/B3牆)", value: 2000000, type: "expense", monthOffset: 10, active: true }, // Active in crisis!
+      { id: "evt-new-16", name: "慶泰-龍祥花台與出入口空鼓地磚重鋪", value: 50000, type: "expense", monthOffset: 6, active: true }
     ]
   },
   healthy: {
@@ -95,10 +125,25 @@ const PRESETS = {
       { id: "exp-8", name: "昕保監視器租賃 (分期12期)", value: 27530, category: "loan" }
     ],
     specialEvents: [
-      { id: "evt-1", name: "40萬消防公安修繕申報工程", value: 400000, type: "expense", monthOffset: 2, active: true },
-      { id: "evt-2", name: "追回 B1 商場積欠管理費", value: 200000, type: "income", monthOffset: 4, active: true },
-      { id: "evt-3", name: "龍祥電梯系統更新尾款50%", value: 165000, type: "expense", monthOffset: 6, active: true },
-      { id: "evt-4", name: "水塔清洗與化糞池清理", value: 25000, type: "expense", monthOffset: 3, active: true }
+      { id: "evt-b1-recover", name: "追回 B1 商場積欠管理費", value: 200000, type: "income", monthOffset: 4, active: true },
+      { id: "evt-elevator-tail", name: "龍祥電梯系統更新尾款50%", value: 165000, type: "expense", monthOffset: 6, active: true },
+      { id: "evt-sewer-clean", name: "水塔清洗與化糞池清理", value: 25000, type: "expense", monthOffset: 3, active: true },
+      { id: "evt-new-1", name: "11F~15F消防灑水測試(機組送電)", value: 80000, type: "expense", monthOffset: 2, active: true },
+      { id: "evt-new-2", name: "B2授信總機迴路未連接查修工程", value: 84500, type: "expense", monthOffset: 3, active: true },
+      { id: "evt-new-3", name: "B3消防室泡沫機組控制異常檢修", value: 12000, type: "expense", monthOffset: 2, active: true },
+      { id: "evt-new-4", name: "B3第69車位廢水池右泵浦逆止閥修復", value: 14000, type: "expense", monthOffset: 3, active: true },
+      { id: "evt-new-5", name: "B3龍江3號防火門鏽蝕更新", value: 40000, type: "expense", monthOffset: 4, active: true },
+      { id: "evt-new-6", name: "龍祥大門上方採光罩破損更新", value: 35000, type: "expense", monthOffset: 4, active: true },
+      { id: "evt-new-7", name: "車道鐵板發出聲響夜間擾民改善工程", value: 1000, type: "expense", monthOffset: 1, active: true },
+      { id: "evt-new-8", name: "龍江/龍祥11F~15F管道間防火檢修口", value: 300000, type: "expense", monthOffset: 7, active: true },
+      { id: "evt-new-9", name: "B1/B2/B3 防火泥填塞工程", value: 250000, type: "expense", monthOffset: 8, active: true },
+      { id: "evt-new-10", name: "安全門下方門檻剷平及順平工程", value: 40000, type: "expense", monthOffset: 5, active: true },
+      { id: "evt-new-11", name: "機車停車格劃設與編號分配", value: 40000, type: "expense", monthOffset: 5, active: true },
+      { id: "evt-new-12", name: "管理室門窗紗窗及遮光窗簾(西曬改善)", value: 2000, type: "expense", monthOffset: 1, active: true },
+      { id: "evt-new-13", name: "評估管理室窗戶外推小平台可行性", value: 2000, type: "expense", monthOffset: 1, active: true },
+      { id: "evt-new-14", name: "B2授信總機室門配鎖管理", value: 1000, type: "expense", monthOffset: 1, active: true },
+      { id: "evt-new-15", name: "B1漏水處理(連續壁漏水損害B2/B3牆)", value: 2000000, type: "expense", monthOffset: 10, active: false }, // Inactive in healthy
+      { id: "evt-new-16", name: "慶泰-龍祥花台與出入口空鼓地磚重鋪", value: 50000, type: "expense", monthOffset: 6, active: true }
     ]
   }
 };
